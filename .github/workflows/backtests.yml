@@ -25,22 +25,6 @@ jobs:
           # - 20250701-20250801
           # - 20250601-20250701
           - 20250501-20250601
-          - 20250401-20250501
-          - 20250301-20250401
-          - 20250201-20250301
-          - 20250101-20250201
-          - 20241201-20250101
-          - 20241101-20241201
-          - 20241001-20241101
-          - 20240901-20241001
-          - 20240801-20240901
-          - 20240701-20240801
-          - 20240601-20240701
-          - 20240501-20240601
-          - 20240401-20240501
-          - 20240301-20240401
-          - 20240201-20240301
-          - 20240101-20240201
 
     steps:
       - uses: actions/checkout@v4
@@ -137,7 +121,7 @@ jobs:
             --workflow=backtests.yml \
             --exchange=kucoin \
             --tradingmode=spot \
-            --name=kucoin-spot-testrun-artifacts downloaded-results
+            --artifact=kucoin-spot-testrun-artifacts downloaded-results
 
       - name: Download Previous Binance Spot CI Artifacts
         env:
@@ -149,7 +133,7 @@ jobs:
             --workflow=backtests.yml \
             --exchange=binance \
             --tradingmode=spot \
-            --name=binance-spot-testrun-artifacts downloaded-results
+            --artifact=binance-spot-testrun-artifacts downloaded-results
 
       - name: Download Previous Binance Futures CI Artifacts
         env:
@@ -161,7 +145,7 @@ jobs:
             --workflow=backtests.yml \
             --exchange=binance \
             --tradingmode=futures \
-            --name=binance-futures-testrun-artifacts downloaded-results
+            --artifact=binance-futures-testrun-artifacts downloaded-results
 
       - name: Download Current Binance Futures CI Artifacts
         uses: actions/download-artifact@v4
