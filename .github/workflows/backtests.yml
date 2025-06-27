@@ -35,17 +35,25 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-docker-
 
-      - name: Build Docker Image
-        env:
-          DOCKER_BUILDKIT: 1
+      - name: Get freqtrade:stable digest (for cache busting)
+        id: freqtrade-digest
         run: |
-          docker build \
-            --cache-from=type=local,src=/tmp/.buildx-cache \
-            --cache-to=type=local,dest=/tmp/.buildx-cache-new,mode=max \
-            -f docker/Dockerfile.custom \
-            -t ci-strategy-backtesting .
-          rm -rf /tmp/.buildx-cache
-          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+          echo "digest=$(docker pull freqtradeorg/freqtrade:stable | grep Digest | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+
+      - name: Clean leftover backtest artifacts
+        run: rm -rf artifacts/ user_data/backtest_results || true
+
+      - name: Build Docker image (clean, with cache)
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: docker/Dockerfile.custom
+          push: false
+          tags: ci-strategy-backtesting:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            sourcetag=stable@${{ steps.freqtrade-digest.outputs.digest }}
 
       - name: Fetch data for backtests
         env:
