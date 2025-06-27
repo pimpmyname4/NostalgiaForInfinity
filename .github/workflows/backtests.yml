@@ -32,8 +32,7 @@ jobs:
       - name: Get freqtrade:stable digest (for cache busting)
         id: freqtrade-digest
         run: |
-          DIGEST=$(docker buildx imagetools inspect freqtradeorg/freqtrade:stable --format '{{ .Digest }}')
-          echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
+          echo "digest=$(docker pull freqtradeorg/freqtrade:stable | grep Digest | awk '{print $2}')" >> "$GITHUB_OUTPUT"
 
       - name: Build Docker Image (with cache)
         uses: docker/build-push-action@v6
