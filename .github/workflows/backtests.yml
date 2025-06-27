@@ -45,7 +45,6 @@ jobs:
           if [ -z "$digest_full" ]; then
             echo "Digest empty, fallback to 'stable'"
             echo "digest=stable" >> "$GITHUB_OUTPUT"
-            echo "Writing stable to freqtrade-digest.txt"
             echo "stable" > freqtrade-digest.txt
           else
             digest="${digest_full#*@}"
