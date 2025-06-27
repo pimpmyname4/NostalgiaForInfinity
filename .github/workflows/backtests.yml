@@ -26,24 +26,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Cache Docker layers
-        uses: actions/cache@v4
-        id: docker-cache
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-docker-${{ hashFiles('docker/Dockerfile.custom') }}
-          restore-keys: |
-            ${{ runner.os }}-docker-
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Get freqtrade:stable digest (for cache busting)
         id: freqtrade-digest
         run: |
-          echo "digest=$(docker pull freqtradeorg/freqtrade:stable | grep Digest | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+          DIGEST=$(docker buildx imagetools inspect freqtradeorg/freqtrade:stable --format '{{ .Manifest.Digest }}')
+          echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
 
-      - name: Clean leftover backtest artifacts
-        run: rm -rf artifacts/ user_data/backtest_results || true
-
-      - name: Build Docker image (clean, with cache)
+      - name: Build Docker Image (with cache)
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -53,6 +45,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
+            sourceimage=freqtradeorg/freqtrade
             sourcetag=stable@${{ steps.freqtrade-digest.outputs.digest }}
 
       - name: Fetch data for backtests
@@ -76,6 +69,9 @@ jobs:
               http_proxy: $proxy
             }' "$file" > tmp.json && mv tmp.json "$file"
           done
+
+      - name: Clean old backtest results
+        run: rm -rf artifacts/ user_data/backtest_results || true
 
       - name: Run Backtests
         run: |
