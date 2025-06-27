@@ -40,9 +40,18 @@ jobs:
         id: freqtrade-digest
         if: steps.cache-digest.outputs.cache-hit != 'true'
         run: |
-          digest=$(docker pull freqtradeorg/freqtrade:stable | grep Digest | awk '{print $2}')
-          echo "$digest" > freqtrade-digest.txt
-          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          docker pull freqtradeorg/freqtrade:stable
+          digest_full=$(docker inspect --format='{{index .RepoDigests 0}}' freqtradeorg/freqtrade:stable || echo "")
+          if [ -z "$digest_full" ]; then
+            echo "Digest empty, fallback to 'stable'"
+            echo "digest=stable" >> "$GITHUB_OUTPUT"
+            echo "Writing stable to freqtrade-digest.txt"
+            echo "stable" > freqtrade-digest.txt
+          else
+            digest="${digest_full#*@}"
+            echo "digest=$digest" >> "$GITHUB_OUTPUT"
+            echo "$digest" > freqtrade-digest.txt
+          fi
 
       - name: Use cached digest if cache hit
         if: steps.cache-digest.outputs.cache-hit == 'true'
@@ -63,7 +72,7 @@ jobs:
           cache-to: type=gha,mode=max
           build-args: |
             sourceimage=freqtradeorg/freqtrade
-            sourcetag=stable@${{ steps.freqtrade-digest.outputs.digest }}
+            sourcedigest=${{ steps.freqtrade-digest.outputs.digest }}
 
       - name: Fetch data for backtests
         env:
