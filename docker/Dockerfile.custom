@@ -1,6 +1,6 @@
 ARG sourceimage=freqtradeorg/freqtrade
 ARG sourcetag=stable
-FROM ${sourceimage}:${sourcetag}
+FROM ${sourceimage}@${sourcedigest}
 USER root
 
 # RUN apt-get update; \
