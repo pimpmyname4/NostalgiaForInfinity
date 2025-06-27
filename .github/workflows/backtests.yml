@@ -26,6 +26,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        id: docker-cache
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-docker-${{ hashFiles('docker/Dockerfile.custom') }}
+          restore-keys: |
+            ${{ runner.os }}-docker-
+
+      - name: Build Docker Image
+        env:
+          DOCKER_BUILDKIT: 1
+        run: |
+          docker build \
+            --cache-from=type=local,src=/tmp/.buildx-cache \
+            --cache-to=type=local,dest=/tmp/.buildx-cache-new,mode=max \
+            -f docker/Dockerfile.custom \
+            -t ci-strategy-backtesting .
+          rm -rf /tmp/.buildx-cache
+          mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+
       - name: Fetch data for backtests
         env:
           EXCHANGE: ${{ matrix.EXCHANGE }}
@@ -53,7 +74,6 @@ jobs:
           mkdir artifacts
           chmod 777 artifacts
           export COLUMNS=240
-          docker build -f docker/Dockerfile.custom --no-cache -t ci-strategy-backtesting . > /dev/null 2>&1
           docker run -v ".:/testing" -v "./user_data/data:/testing/user_data/data" --rm \
             -w /testing --entrypoint "" -e "COLUMNS=240" \
             --env-file .github/workflows/scripts/ci-proxy.env \
@@ -99,6 +119,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Cache pip dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('tests/ci-requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -106,6 +134,7 @@ jobs:
 
       - name: Install Dependencies
         run: |
+          python -m pip install --upgrade pip
           python -m pip install -r tests/ci-requirements.txt
 
       - name: Download Previous Kucoin CI Artifacts
