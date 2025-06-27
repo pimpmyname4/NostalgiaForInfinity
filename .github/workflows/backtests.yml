@@ -95,7 +95,6 @@ jobs:
           mkdir artifacts
           chmod 777 artifacts
           export COLUMNS=240
-          docker image ls
           docker run -v ".:/testing" -v "./user_data/data:/testing/user_data/data" --rm \
             -w /testing --entrypoint "" -e "COLUMNS=240" \
             --env-file .github/workflows/scripts/ci-proxy.env \
