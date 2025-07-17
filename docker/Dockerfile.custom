@@ -1,17 +1,29 @@
 ARG sourceimage=freqtradeorg/freqtrade
 ARG sourcetag=stable
+
+# Stage 1: Build dependencies
+FROM ${sourceimage}:${sourcetag} as builder
+
+USER root
+RUN pip install --upgrade pip
+
+COPY --chown=1000:1000 tests/requirements.txt /freqtrade/
+
+USER ftuser
+RUN pip install --user --no-build-isolation -r /freqtrade/requirements.txt
+
+USER root
+# Fix ownership of user install directory
+RUN chown -R 1000:1000 /home/ftuser/.local
+
+# Stage 2: Final image
 FROM ${sourceimage}:${sourcetag}
 
 USER root
 
-# Install pip first so it's cached separately (and rarely changes)
-RUN pip install --upgrade pip
-
-# Copy requirements — cache will invalidate only if the file changes
+COPY --from=builder /home/ftuser/.local /home/ftuser/.local
 COPY --chown=1000:1000 tests/requirements.txt /freqtrade/
 
 USER ftuser
 
-# Install dependencies, with cache enabled by default
-RUN --mount=type=cache,target=/home/ftuser/.cache/pip \
-    pip install --user --no-build-isolation -r /freqtrade/requirements.txt
+ENV PATH=/home/ftuser/.local/bin:$PATH
