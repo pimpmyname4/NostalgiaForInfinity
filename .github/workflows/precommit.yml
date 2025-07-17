@@ -15,6 +15,14 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-cache-${{ runner.os }}-${{ hashFiles('**/requirements.txt', '**/tests/ci-requirements.txt', '.pre-commit-config.yaml') }}
+          restore-keys: |
+            pip-cache-${{ runner.os }}-
+
       - id: changed-files
         name: Check changed files
         uses: dorny/paths-filter@v3
