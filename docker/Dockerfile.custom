@@ -2,7 +2,7 @@ ARG sourceimage=freqtradeorg/freqtrade
 ARG sourcetag=stable
 
 # Stage 1: Build dependencies
-FROM ${sourceimage}:${sourcetag} as builder
+FROM ${sourceimage}:${sourcetag} AS builder
 
 USER root
 RUN pip install --upgrade pip
