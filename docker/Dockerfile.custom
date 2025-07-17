@@ -4,14 +4,8 @@ FROM ${sourceimage}:${sourcetag}
 
 USER root
 
-# Install pip first so it's cached separately (and rarely changes)
-RUN pip install --upgrade pip
-
 # Copy requirements — cache will invalidate only if the file changes
 COPY --chown=1000:1000 tests/requirements.txt /freqtrade/
 
-USER ftuser
-
 # Install dependencies, with cache enabled by default
-RUN --mount=type=cache,target=/home/ftuser/.cache/pip \
-    pip install --user --no-build-isolation -r /freqtrade/requirements.txt
+RUN pip install --no-build-isolation -r /freqtrade/requirements.txt
