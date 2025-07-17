@@ -89,11 +89,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        EXCHANGE: [binance, kucoin]
-        TRADING_MODE: [spot, futures]
-        exclude:
-          - EXCHANGE: kucoin
-            TRADING_MODE: futures
+        EXCHANGE: [kucoin]
+        TRADING_MODE: [spot]
     steps:
       - name: Merge Artifacts
         uses: actions/upload-artifact/merge@v4
