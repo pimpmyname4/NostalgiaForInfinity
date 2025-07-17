@@ -13,4 +13,5 @@ COPY --chown=1000:1000 tests/requirements.txt /freqtrade/
 USER ftuser
 
 # Install dependencies, with cache enabled by default
-RUN pip install --user --no-build-isolation -r /freqtrade/requirements.txt
+RUN --mount=type=cache,target=/home/ftuser/.cache/pip \
+    pip install --user --no-build-isolation -r /freqtrade/requirements.txt
