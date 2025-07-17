@@ -4,6 +4,9 @@ FROM ${sourceimage}:${sourcetag}
 
 USER root
 
+# Install pip first so it's cached separately (and rarely changes)
+RUN pip install --upgrade pip
+
 # Copy requirements — cache will invalidate only if the file changes
 COPY --chown=1000:1000 tests/requirements.txt /freqtrade/
 
