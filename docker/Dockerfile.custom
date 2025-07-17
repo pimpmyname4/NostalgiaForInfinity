@@ -10,5 +10,7 @@ RUN pip install --upgrade pip
 # Copy requirements — cache will invalidate only if the file changes
 COPY --chown=1000:1000 tests/requirements.txt /freqtrade/
 
+USER ftuser
+
 # Install dependencies, with cache enabled by default
-RUN pip install --no-build-isolation -r /freqtrade/requirements.txt
+RUN pip install --user --no-build-isolation -r /freqtrade/requirements.txt
