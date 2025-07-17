@@ -36,6 +36,7 @@ jobs:
           restore-keys: |
             pre-commit|${{ env.PY }}|
             pre-commit|
+          retention-days: 7
 
       - name: Run pre-commit on all files (for push events)
         uses: pre-commit/action@v3.0.1
