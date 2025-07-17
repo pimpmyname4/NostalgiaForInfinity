@@ -55,6 +55,9 @@ jobs:
           load: true
           cache-from: type=gha,scope=ci-strategy-backtesting
           cache-to: type=gha,mode=max,scope=ci-strategy-backtesting
+        env:
+          DOCKER_BUILDKIT: 1
+          BUILDKIT_PROGRESS: plain
 
       - name: Run Backtests
         run: |
