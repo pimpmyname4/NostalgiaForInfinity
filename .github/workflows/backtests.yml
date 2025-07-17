@@ -57,6 +57,10 @@ jobs:
           cache-to: type=gha,mode=max,scope=ci-strategy-backtesting
         env:
           DOCKER_BUILDKIT: 1
+          DOCKER_BUILD_CHECKS_ANNOTATIONS: false
+          DOCKER_BUILD_SUMMARY: false
+          DOCKER_BUILD_RECORD_UPLOAD: false
+          DOCKER_BUILD_RECORD_RETENTION_DAYS: 7
 
       - name: Run Backtests
         run: |
@@ -118,6 +122,7 @@ jobs:
           key: ${{ runner.os }}-pip-${{ hashFiles('tests/ci-requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-
+          retention-days: 7
 
       - name: Set up Python
         uses: actions/setup-python@v5
