@@ -378,7 +378,7 @@ jobs:
 
       - name: Convert Backtest Output to Markdown
         run: |
-          python .github/scripts/format_backtest.py downloaded-results/*.txt
+          python .github/workflows/scripts/format_backtest.py downloaded-results/*.txt
 
       - name: Comment CI Results
         env:
