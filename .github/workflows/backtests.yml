@@ -376,6 +376,10 @@ jobs:
           pattern: kucoin-spot-testrun-artifacts
           path: downloaded-results/current
 
+      - name: Convert Backtest Output to Markdown
+        run: |
+          python .github/scripts/format_backtest.py downloaded-results/*.txt
+
       - name: Comment CI Results
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
