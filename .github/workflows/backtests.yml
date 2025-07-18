@@ -110,7 +110,8 @@ jobs:
 
       - name: Run Backtests
         run: |
-          mkdir -p artifacts && chmod 777 artifacts
+          mkdir -p artifacts
+          chmod 777 artifacts
           docker run --rm \
             -v "$PWD:/testing" \
             -v "$PWD/user_data/data:/testing/user_data/data" \
@@ -176,7 +177,8 @@ jobs:
 
       - name: Run Backtests
         run: |
-          mkdir -p artifacts && chmod 777 artifacts
+          mkdir -p artifacts
+          chmod 777 artifacts
           docker run --rm \
             -v "$PWD:/testing" \
             -v "$PWD/user_data/data:/testing/user_data/data" \
@@ -234,7 +236,8 @@ jobs:
 
       - name: Run Backtests
         run: |
-          mkdir -p artifacts && chmod 777 artifacts
+          mkdir -p artifacts
+          chmod 777 artifacts
           docker run --rm \
             -v "$PWD:/testing" \
             -v "$PWD/user_data/data:/testing/user_data/data" \
