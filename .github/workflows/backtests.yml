@@ -10,8 +10,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        EXCHANGE: [kucoin]
-        TRADING_MODE: [spot]
+        EXCHANGE: [binance, kucoin]
+        TRADING_MODE: [spot, futures]
+        exclude:
+          - EXCHANGE: kucoin
+            TRADING_MODE: futures
         TIMERANGE:
           - 20240101-20250701
     steps:
@@ -40,8 +43,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        EXCHANGE: [kucoin]
-        TRADING_MODE: [spot]
+        EXCHANGE: [binance, kucoin]
+        TRADING_MODE: [spot, futures]
+        exclude:
+          - EXCHANGE: kucoin
+            TRADING_MODE: futures
         TIMERANGE:
           - 20240201-20240301
           - 20240101-20240201
