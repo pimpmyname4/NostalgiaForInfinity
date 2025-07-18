@@ -5,87 +5,218 @@ on:
   workflow_dispatch:
 
 jobs:
-  Download-Data:
+  # Download jobs
+  Download-Data-Binance-Spot:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        EXCHANGE: [binance, kucoin]
-        TRADING_MODE: [spot, futures]
-        exclude:
-          - EXCHANGE: kucoin
-            TRADING_MODE: futures
-        TIMERANGE:
-          - 20240101-20250701
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-      - name: Fetch data for backtests
+      - uses: actions/checkout@v4
+      - name: Fetch Binance Spot data
         env:
-          EXCHANGE: ${{ matrix.EXCHANGE }}
-          TRADING_MODE: ${{ matrix.TRADING_MODE }}
+          EXCHANGE: binance
+          TRADING_MODE: spot
           TIMEFRAME: 5m
-          TIMERANGE: ${{ matrix.TIMERANGE }}
+          TIMERANGE: 20240101-20250701
           HELPER_TIME_FRAMES: 5m 15m 1h 4h 8h 1d
-        run: |
-          .github/workflows/scripts/download-necessary-exchange-market-data-for-backtests.sh
-
+        run: .github/workflows/scripts/download-necessary-exchange-market-data-for-backtests.sh
       - name: Upload Market Data Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: data-${{ matrix.EXCHANGE }}-${{ matrix.TRADING_MODE }}
+          name: data-binance-spot
           path: user_data/data
           retention-days: 1
 
-  Backtest:
-    needs: Download-Data
+  Download-Data-Binance-Futures:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch Binance Futures data
+        env:
+          EXCHANGE: binance
+          TRADING_MODE: futures
+          TIMEFRAME: 5m
+          TIMERANGE: 20240101-20250701
+          HELPER_TIME_FRAMES: 5m 15m 1h 4h 8h 1d
+        run: .github/workflows/scripts/download-necessary-exchange-market-data-for-backtests.sh
+      - name: Upload Market Data Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: data-binance-futures
+          path: user_data/data
+          retention-days: 1
+
+  Download-Data-Kucoin-Spot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch Kucoin Spot data
+        env:
+          EXCHANGE: kucoin
+          TRADING_MODE: spot
+          TIMEFRAME: 5m
+          TIMERANGE: 20240101-20250701
+          HELPER_TIME_FRAMES: 5m 15m 1h 4h 8h 1d
+        run: .github/workflows/scripts/download-necessary-exchange-market-data-for-backtests.sh
+      - name: Upload Market Data Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: data-kucoin-spot
+          path: user_data/data
+          retention-days: 1
+
+  # Backtest Jobs
+  Backtest-Binance-Spot:
+    needs: Download-Data-Binance-Spot
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        EXCHANGE: [binance, kucoin]
-        TRADING_MODE: [spot, futures]
-        exclude:
-          - EXCHANGE: kucoin
-            TRADING_MODE: futures
         TIMERANGE:
-          - 20240201-20240301
           - 20240101-20240201
-
+          - 20240201-20240301
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - name: Download Market Data Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: data-binance-spot
+          path: user_data/data
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Download Market Data Artifact for Spot
-        if: ${{ matrix.TRADING_MODE == 'spot' }}
-        uses: actions/download-artifact@v4
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
         with:
-          name: data-${{ matrix.EXCHANGE }}-${{ matrix.TRADING_MODE }}
-          path: user_data/data
-
-      - name: Download Market Data Artifact for Futures
-        if: ${{ matrix.TRADING_MODE == 'futures' }}
-        uses: actions/download-artifact@v4
-        with:
-          name: data-${{ matrix.EXCHANGE }}-${{ matrix.TRADING_MODE }}
-          path: user_data/data
+          context: .
+          file: docker/Dockerfile.custom
+          tags: ci-strategy-backtesting
+          push: false
+          load: true
+          cache-from: type=gha,mode=inline,scope=ci-strategy-backtesting
+          cache-to: type=gha,mode=max,scope=ci-strategy-backtesting
+        env:
+          DOCKER_BUILDKIT: 1
+          DOCKER_BUILD_CHECKS_ANNOTATIONS: false
+          DOCKER_BUILD_SUMMARY: false
+          DOCKER_BUILD_RECORD_UPLOAD: false
 
       - name: Inject proxy config
-        if: ${{ matrix.EXCHANGE == 'binance' }}
         env:
           PROXY: ${{ secrets.FREQTRADE_PROXY }}
         run: |
-          for file in configs/proxy-binance.json; do
-            jq --arg proxy "$PROXY" \
-            '.exchange.ccxt_config = {
-              http_proxy: $proxy
-            }' "$file" > tmp.json && mv tmp.json "$file"
-          done
+          jq --arg proxy "$PROXY" \
+            '.exchange.ccxt_config = { http_proxy: $proxy }' \
+            configs/proxy-binance.json > tmp.json && mv tmp.json configs/proxy-binance.json
 
-      - name: Docker build
+      - name: Run Backtests
+        run: |
+          mkdir -p artifacts && chmod 777 artifacts
+          docker run --rm \
+            -v "$PWD:/testing" \
+            -v "$PWD/user_data/data:/testing/user_data/data" \
+            -w /testing \
+            ci-strategy-backtesting \
+            python -m pytest tests/backtests -ra -vv -s \
+              --log-cli-level=info \
+              --artifacts-path=artifacts/ \
+              -p no:cacheprovider \
+              -k "binance and spot and ${{ matrix.TIMERANGE }}"
+
+      - name: Show Backtest Output
+        run: cat artifacts/backtest-output-binance-spot-${{ matrix.TIMERANGE }}.txt
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: binance-spot-testrun-artifacts-${{ matrix.TIMERANGE }}
+          path: artifacts/
+
+  Backtest-Binance-Futures:
+    needs: Download-Data-Binance-Futures
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        TIMERANGE:
+          - 20240101-20240201
+          - 20240201-20240301
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download Market Data Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: data-binance-futures
+          path: user_data/data
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.custom
+          tags: ci-strategy-backtesting
+          push: false
+          load: true
+          cache-from: type=gha,mode=inline,scope=ci-strategy-backtesting
+          cache-to: type=gha,mode=max,scope=ci-strategy-backtesting
+        env:
+          DOCKER_BUILDKIT: 1
+          DOCKER_BUILD_CHECKS_ANNOTATIONS: false
+          DOCKER_BUILD_SUMMARY: false
+          DOCKER_BUILD_RECORD_UPLOAD: false
+
+      - name: Inject proxy config
+        env:
+          PROXY: ${{ secrets.FREQTRADE_PROXY }}
+        run: |
+          jq --arg proxy "$PROXY" \
+            '.exchange.ccxt_config = { http_proxy: $proxy }' \
+            configs/proxy-binance.json > tmp.json && mv tmp.json configs/proxy-binance.json
+
+      - name: Run Backtests
+        run: |
+          mkdir -p artifacts && chmod 777 artifacts
+          docker run --rm \
+            -v "$PWD:/testing" \
+            -v "$PWD/user_data/data:/testing/user_data/data" \
+            -w /testing \
+            ci-strategy-backtesting \
+            python -m pytest tests/backtests -ra -vv -s \
+              --log-cli-level=info \
+              --artifacts-path=artifacts/ \
+              -p no:cacheprovider \
+              -k "binance and futures and ${{ matrix.TIMERANGE }}"
+
+      - name: Show Backtest Output
+        run: cat artifacts/backtest-output-binance-futures-${{ matrix.TIMERANGE }}.txt
+      - name: Upload results
+        uses: actions/upload-artifact@v4
+        with:
+          name: binance-futures-testrun-artifacts-${{ matrix.TIMERANGE }}
+          path: artifacts/
+
+  Backtest-Kucoin-Spot:
+    needs: Download-Data-Kucoin-Spot
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        TIMERANGE:
+          - 20240101-20240201
+          - 20240201-20240301
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download Market Data Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: data-kucoin-spot
+          path: user_data/data
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -103,43 +234,38 @@ jobs:
 
       - name: Run Backtests
         run: |
-          mkdir -p artifacts
-          chmod 777 artifacts
-          tree
-          export COLUMNS=240
-          docker run -v "$PWD:/testing" \
+          mkdir -p artifacts && chmod 777 artifacts
+          docker run --rm \
+            -v "$PWD:/testing" \
             -v "$PWD/user_data/data:/testing/user_data/data" \
-            --rm \
             -w /testing \
-            --entrypoint "" \
-            --env-file .github/workflows/scripts/ci-proxy.env \
             ci-strategy-backtesting \
-            python -m pytest \
-            tests/backtests \
-            -ra -vv -s \
-            --log-cli-level=info \
-            --artifacts-path=artifacts/ \
-            -p no:cacheprovider \
-            -k "${{ matrix.EXCHANGE }} and ${{ matrix.TRADING_MODE }} and ${{ matrix.TIMERANGE }}" \
+            python -m pytest tests/backtests -ra -vv -s \
+              --log-cli-level=info \
+              --artifacts-path=artifacts/ \
+              -p no:cacheprovider \
+              -k "kucoin and spot and ${{ matrix.TIMERANGE }}"
 
       - name: Show Backtest Output
-        run: cat artifacts/backtest-output-${{ matrix.EXCHANGE }}-${{ matrix.TRADING_MODE }}-${{ matrix.TIMERANGE }}.txt
-
-      - name: Upload Artifacts
+        run: cat artifacts/backtest-output-kucoin-spot-${{ matrix.TIMERANGE }}.txt
+      - name: Upload results
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.EXCHANGE }}-${{ matrix.TRADING_MODE }}-testrun-artifacts-${{ matrix.TIMERANGE }}
+          name: kucoin-spot-testrun-artifacts-${{ matrix.TIMERANGE }}
           path: artifacts/
 
   Merge-Artifacts:
     if: always()
-    needs: Backtest
+    needs:
+      - Backtest-Kucoin-Spot
+      - Backtest-Binance-Spot
+      - Backtest-Binance-Futures
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        EXCHANGE: [kucoin]
-        TRADING_MODE: [spot]
+        EXCHANGE: [kucoin, binance]
+        TRADING_MODE: [spot, futures]
     steps:
       - name: Merge Artifacts
         uses: actions/upload-artifact/merge@v4
