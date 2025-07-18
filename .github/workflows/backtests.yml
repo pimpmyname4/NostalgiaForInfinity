@@ -73,10 +73,14 @@ jobs:
             --entrypoint "" \
             --env-file .github/workflows/scripts/ci-proxy.env \
             ci-strategy-backtesting \
-            python -m pytest -ra -vv -s --log-cli-level=info \
+            python -m pytest \
+            tests/backtests \
+            -ra -vv -s \
+            --log-cli-level=info \
             --artifacts-path=artifacts/ \
-            -p no:cacheprovider tests/backtests \
-            -k '${{ matrix.EXCHANGE }} and ${{ matrix.TRADING_MODE }} and ${{ matrix.TIMERANGE }}'
+            -p no:cacheprovider \
+            -k "${{ matrix.EXCHANGE }} and ${{ matrix.TRADING_MODE }} and ${{ matrix.TIMERANGE }}" \
+            -n auto
 
       - name: Show Backtest Output
         run: cat artifacts/backtest-output-${{ matrix.EXCHANGE }}-${{ matrix.TRADING_MODE }}-${{ matrix.TIMERANGE }}.txt
