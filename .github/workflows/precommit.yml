@@ -15,6 +15,14 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Cache pip packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: pip-cache-${{ runner.os }}
+          restore-keys: |
+            pip-cache-${{ runner.os }}-
+
       - id: changed-files
         name: Check changed files
         uses: dorny/paths-filter@v3
@@ -36,7 +44,6 @@ jobs:
           restore-keys: |
             pre-commit|${{ env.PY }}|
             pre-commit|
-          retention-days: 7
 
       - name: Run pre-commit on all files (for push events)
         uses: pre-commit/action@v3.0.1
