@@ -180,7 +180,6 @@ jobs:
             configs/proxy-binance.json > tmp.json && mv tmp.json configs/proxy-binance.json
 
       - name: Run Backtests
-      - name: Run Backtests
         run: |
           mkdir -p artifacts && chmod 777 artifacts
           export COLUMNS=240
