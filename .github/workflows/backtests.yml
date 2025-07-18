@@ -378,7 +378,9 @@ jobs:
 
       - name: Convert Backtest Output to Markdown
         run: |
-          python .github/workflows/scripts/format_backtest.py downloaded-results/*.txt
+          find downloaded-results/ -type f -iname "*.txt" -print0 | while IFS= read -r -d '' file; do
+            python .github/workflows/scripts/format_backtest.py "$file"
+          done
 
       - name: Comment CI Results
         env:
