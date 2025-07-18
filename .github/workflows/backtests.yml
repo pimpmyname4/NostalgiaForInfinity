@@ -80,7 +80,6 @@ jobs:
             --artifacts-path=artifacts/ \
             -p no:cacheprovider \
             -k "${{ matrix.EXCHANGE }} and ${{ matrix.TRADING_MODE }} and ${{ matrix.TIMERANGE }}" \
-            -n auto
 
       - name: Show Backtest Output
         run: cat artifacts/backtest-output-${{ matrix.EXCHANGE }}-${{ matrix.TRADING_MODE }}-${{ matrix.TIMERANGE }}.txt
