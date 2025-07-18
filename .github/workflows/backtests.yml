@@ -380,27 +380,26 @@ jobs:
         run: |
           find downloaded-results/current -type f -name 'backtest-output-*.txt' -exec mv {} downloaded-results/current/ \;
 
-      - name: Pre Format Backtest Results
+      - name: Format Backtest Results for Markdown
         shell: bash
         run: |
           for file in $(find downloaded-results/ -type f -iname "*.txt"); do
-            sed -i 's/└.*┘//g' "$file"
-            sed -i 's/┏.*┓//g' "$file"
-            sed -i 's/┡/|/g' "$file"
-            sed -i 's/┃/|/g' "$file"
-            sed -i 's/╇/:|/g' "$file"
-            sed -i 's/━/-/g' "$file"
-            sed -i 's/│/|/g' "$file"
-            sed -i 's/┩/:|/g' "$file"
-            sed -i 's/BACKTESTING REPORT/\n## BACKTESTING REPORT\n/g' "$file"
-            sed -i 's/LEFT OPEN TRADES REPORT/\n## LEFT OPEN TRADES REPORT\n/g' "$file"
-            sed -i 's/ENTER TAG STATS/\n## ENTER TAG STATS\n/g' "$file"
-            sed -i 's/EXIT REASON STATS/\n## EXIT REASON STATS\n/g' "$file"
-            sed -i 's/MIXED TAG STATS/\n## MIXED TAG STATS\n/g' "$file"
-            sed -i 's/DAY BREAKDOWN/\n## DAY BREAKDOWN\n/g' "$file"
-            sed -i 's/SUMMARY METRICS/\n## SUMMARY METRICS\n/g' "$file"
-            sed -i 's/STRATEGY SUMMARY/\n## STRATEGY SUMMARY\n/g' "$file"
+            # Convert table border characters to pipes or nothing
+            sed -i 's/[┏┓┗┛┻┳╋╇╈╤╪┼┯┰┱┲┳┴┐┌┘└╹╺╸╼╽━]/-/g' "$file"
+            sed -i 's/[┃│]/|/g' "$file"
+            sed -i 's/[┡┩]/|/g' "$file"
+      
+            # Add Markdown headers to key sections
+            sed -i 's/^STRATEGY SUMMARY$/\n## STRATEGY SUMMARY\n/g' "$file"
+            sed -i 's/^BACKTESTING REPORT$/\n## BACKTESTING REPORT\n/g' "$file"
+            sed -i 's/^LEFT OPEN TRADES REPORT$/\n## LEFT OPEN TRADES REPORT\n/g' "$file"
+            sed -i 's/^ENTER TAG STATS$/\n## ENTER TAG STATS\n/g' "$file"
+            sed -i 's/^EXIT REASON STATS$/\n## EXIT REASON STATS\n/g' "$file"
+            sed -i 's/^MIXED TAG STATS$/\n## MIXED TAG STATS\n/g' "$file"
+            sed -i 's/^DAY BREAKDOWN$/\n## DAY BREAKDOWN\n/g' "$file"
+            sed -i 's/^SUMMARY METRICS$/\n## SUMMARY METRICS\n/g' "$file"
           done
+
       - name: Comment CI Results
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
