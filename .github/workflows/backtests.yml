@@ -1,10 +1,47 @@
 name: Backtests
 
 on:
-  push:
   workflow_dispatch:
+  push:
+    paths:
+      - 'NostalgiaForInfinityX6.py'
 
 jobs:
+  # Docker build
+  Build-Docker-Image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and load Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.custom
+          tags: ci-strategy-backtesting:latest
+          load: true
+          cache-from: type=gha,mode=inline,scope=ci-strategy-backtesting
+          cache-to: type=gha,mode=max,scope=ci-strategy-backtesting
+        env:
+          DOCKER_BUILDKIT: 1
+          DOCKER_BUILD_CHECKS_ANNOTATIONS: false
+          DOCKER_BUILD_SUMMARY: false
+          DOCKER_BUILD_RECORD_UPLOAD: false
+
+      - name: Save Docker image as tarball
+        run: |
+          docker save ci-strategy-backtesting:latest -o image.tar
+
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: image.tar
+          retention-days: 1
+
   # Download jobs
   Download-Data-Binance-Spot:
     runs-on: ubuntu-latest
@@ -62,17 +99,18 @@ jobs:
           name: data-kucoin-spot
           path: user_data/data
           retention-days: 1
-
   # Backtest Jobs
   Backtest-Binance-Spot:
-    needs: Download-Data-Binance-Spot
+    needs:
+      - Download-Data-Binance-Spot
+      - Build-Docker-Image
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         TIMERANGE:
-          - 20240101-20240201
-          - 20240201-20240301
+          - 20250601-20250701
+          - 20250501-20250601
     steps:
       - uses: actions/checkout@v4
       - name: Download Market Data Artifact
@@ -81,26 +119,16 @@ jobs:
           name: data-binance-spot
           path: user_data/data
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build Docker image
-        uses: docker/build-push-action@v6
+      - name: Download Docker Image Artifact
+        uses: actions/download-artifact@v4
         with:
-          context: .
-          file: docker/Dockerfile.custom
-          tags: ci-strategy-backtesting
-          push: false
-          load: true
-          cache-from: type=gha,mode=inline,scope=ci-strategy-backtesting
-          cache-to: type=gha,mode=max,scope=ci-strategy-backtesting
-        env:
-          DOCKER_BUILDKIT: 1
-          DOCKER_BUILD_CHECKS_ANNOTATIONS: false
-          DOCKER_BUILD_SUMMARY: false
-          DOCKER_BUILD_RECORD_UPLOAD: false
+          name: docker-image
+          path: .
 
-      - name: Inject proxy config
+      - name: Load Docker Image
+        run: docker load -i image.tar
+
+      - name: Inject Proxy Config
         env:
           PROXY: ${{ secrets.FREQTRADE_PROXY }}
         run: |
@@ -136,14 +164,16 @@ jobs:
           path: artifacts/
 
   Backtest-Binance-Futures:
-    needs: Download-Data-Binance-Futures
+    needs:
+      - Download-Data-Binance-Futures
+      - Build-Docker-Image
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         TIMERANGE:
-          - 20240101-20240201
-          - 20240201-20240301
+          - 20250601-20250701
+          - 20250501-20250601
     steps:
       - uses: actions/checkout@v4
       - name: Download Market Data Artifact
@@ -152,26 +182,16 @@ jobs:
           name: data-binance-futures
           path: user_data/data
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build Docker image
-        uses: docker/build-push-action@v6
+      - name: Download Docker Image Artifact
+        uses: actions/download-artifact@v4
         with:
-          context: .
-          file: docker/Dockerfile.custom
-          tags: ci-strategy-backtesting
-          push: false
-          load: true
-          cache-from: type=gha,mode=inline,scope=ci-strategy-backtesting
-          cache-to: type=gha,mode=max,scope=ci-strategy-backtesting
-        env:
-          DOCKER_BUILDKIT: 1
-          DOCKER_BUILD_CHECKS_ANNOTATIONS: false
-          DOCKER_BUILD_SUMMARY: false
-          DOCKER_BUILD_RECORD_UPLOAD: false
+          name: docker-image
+          path: .
 
-      - name: Inject proxy config
+      - name: Load Docker Image
+        run: docker load -i image.tar
+
+      - name: Inject Proxy Config
         env:
           PROXY: ${{ secrets.FREQTRADE_PROXY }}
         run: |
@@ -207,14 +227,16 @@ jobs:
           path: artifacts/
 
   Backtest-Kucoin-Spot:
-    needs: Download-Data-Kucoin-Spot
+    needs:
+      - Download-Data-Kucoin-Spot
+      - Build-Docker-Image
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         TIMERANGE:
-          - 20240101-20240201
-          - 20240201-20240301
+          - 20250601-20250701
+          - 20250501-20250601
     steps:
       - uses: actions/checkout@v4
       - name: Download Market Data Artifact
@@ -223,24 +245,14 @@ jobs:
           name: data-kucoin-spot
           path: user_data/data
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build Docker image
-        uses: docker/build-push-action@v6
+      - name: Download Docker Image Artifact
+        uses: actions/download-artifact@v4
         with:
-          context: .
-          file: docker/Dockerfile.custom
-          tags: ci-strategy-backtesting
-          push: false
-          load: true
-          cache-from: type=gha,mode=inline,scope=ci-strategy-backtesting
-          cache-to: type=gha,mode=max,scope=ci-strategy-backtesting
-        env:
-          DOCKER_BUILDKIT: 1
-          DOCKER_BUILD_CHECKS_ANNOTATIONS: false
-          DOCKER_BUILD_SUMMARY: false
-          DOCKER_BUILD_RECORD_UPLOAD: false
+          name: docker-image
+          path: .
+
+      - name: Load Docker Image
+        run: docker load -i image.tar
 
       - name: Run Backtests
         run: |
@@ -299,16 +311,7 @@ jobs:
       contents: write
       actions: read
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Cache pip packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('tests/ci-requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-
+      - uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -378,24 +381,26 @@ jobs:
           find downloaded-results/current -type f -name 'backtest-output-*.txt' -exec mv {} downloaded-results/current/ \;
 
       - name: Pre Format Backtest Results
+        shell: bash
         run: |
-          find downloaded-results/ -type f -iname *.txt -exec sed -i 's/└.*┘//g' {} +
-          find downloaded-results/ -type f -iname *.txt -exec sed -i 's/┏.*┓//g' {} +
-          find downloaded-results/ -type f -iname *.txt -exec sed -i 's/┡/|/g' {} +
-          find downloaded-results/ -type f -iname *.txt -exec sed -i 's/┃/|/g' {} +
-          find downloaded-results/ -type f -iname *.txt -exec sed -i 's/╇/:|/g' {} +
-          find downloaded-results/ -type f -iname *.txt -exec sed -i 's/━/-/g' {} +
-          find downloaded-results/ -type f -iname *.txt -exec sed -i 's/│/|/g' {} +
-          find downloaded-results/ -type f -iname *.txt -exec sed -i 's/┩/:|/g' {} +
-          find downloaded-results/ -type f -iname *.txt -exec sed -i 's/BACKTESTING REPORT/\n## BACKTESTING REPORT\n/g' {} +
-          find downloaded-results/ -type f -iname *.txt -exec sed -i 's/LEFT OPEN TRADES REPORT/\n## LEFT OPEN TRADES REPORT\n/g' {} +
-          find downloaded-results/ -type f -iname *.txt -exec sed -i 's/ENTER TAG STATS/\n## ENTER TAG STATS\n/g' {} +
-          find downloaded-results/ -type f -iname *.txt -exec sed -i 's/EXIT REASON STATS/\n## EXIT REASON STATS\n/g' {} +
-          find downloaded-results/ -type f -iname *.txt -exec sed -i 's/MIXED TAG STATS/\n## MIXED TAG STATS\n/g' {} +
-          find downloaded-results/ -type f -iname *.txt -exec sed -i 's/DAY BREAKDOWN/\n## DAY BREAKDOWN\n/g' {} +
-          find downloaded-results/ -type f -iname *.txt -exec sed -i 's/SUMMARY METRICS/\n## SUMMARY METRICS\n/g' {} +
-          find downloaded-results/ -type f -iname *.txt -exec sed -i 's/STRATEGY SUMMARY/\n## STRATEGY SUMMARY\n/g' {} +
-
+          for file in $(find downloaded-results/ -type f -iname "*.txt"); do
+            sed -i 's/└.*┘//g' "$file"
+            sed -i 's/┏.*┓//g' "$file"
+            sed -i 's/┡/|/g' "$file"
+            sed -i 's/┃/|/g' "$file"
+            sed -i 's/╇/:|/g' "$file"
+            sed -i 's/━/-/g' "$file"
+            sed -i 's/│/|/g' "$file"
+            sed -i 's/┩/:|/g' "$file"
+            sed -i 's/BACKTESTING REPORT/\n## BACKTESTING REPORT\n/g' "$file"
+            sed -i 's/LEFT OPEN TRADES REPORT/\n## LEFT OPEN TRADES REPORT\n/g' "$file"
+            sed -i 's/ENTER TAG STATS/\n## ENTER TAG STATS\n/g' "$file"
+            sed -i 's/EXIT REASON STATS/\n## EXIT REASON STATS\n/g' "$file"
+            sed -i 's/MIXED TAG STATS/\n## MIXED TAG STATS\n/g' "$file"
+            sed -i 's/DAY BREAKDOWN/\n## DAY BREAKDOWN\n/g' "$file"
+            sed -i 's/SUMMARY METRICS/\n## SUMMARY METRICS\n/g' "$file"
+            sed -i 's/STRATEGY SUMMARY/\n## STRATEGY SUMMARY\n/g' "$file"
+          done
       - name: Comment CI Results
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
