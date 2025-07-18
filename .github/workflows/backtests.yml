@@ -110,18 +110,22 @@ jobs:
 
       - name: Run Backtests
         run: |
-          mkdir -p artifacts
-          chmod 777 artifacts
-          docker run --rm \
-            -v "$PWD:/testing" \
+          mkdir -p artifacts && chmod 777 artifacts
+          export COLUMNS=240
+          docker run -v "$PWD:/testing" \
             -v "$PWD/user_data/data:/testing/user_data/data" \
+            --rm \
             -w /testing \
+            --entrypoint "" \
+            --env-file .github/workflows/scripts/ci-proxy.env \
             ci-strategy-backtesting \
-            python -m pytest tests/backtests -ra -vv -s \
-              --log-cli-level=info \
-              --artifacts-path=artifacts/ \
-              -p no:cacheprovider \
-              -k "binance and spot and ${{ matrix.TIMERANGE }}"
+            python -m pytest \
+            tests/backtests \
+            -ra -vv -s \
+            --log-cli-level=info \
+            --artifacts-path=artifacts/ \
+            -p no:cacheprovider \
+            -k "binance and spot and ${{ matrix.TIMERANGE }}"
 
       - name: Show Backtest Output
         run: cat artifacts/backtest-output-binance-spot-${{ matrix.TIMERANGE }}.txt
@@ -176,19 +180,24 @@ jobs:
             configs/proxy-binance.json > tmp.json && mv tmp.json configs/proxy-binance.json
 
       - name: Run Backtests
+      - name: Run Backtests
         run: |
-          mkdir -p artifacts
-          chmod 777 artifacts
-          docker run --rm \
-            -v "$PWD:/testing" \
+          mkdir -p artifacts && chmod 777 artifacts
+          export COLUMNS=240
+          docker run -v "$PWD:/testing" \
             -v "$PWD/user_data/data:/testing/user_data/data" \
+            --rm \
             -w /testing \
+            --entrypoint "" \
+            --env-file .github/workflows/scripts/ci-proxy.env \
             ci-strategy-backtesting \
-            python -m pytest tests/backtests -ra -vv -s \
-              --log-cli-level=info \
-              --artifacts-path=artifacts/ \
-              -p no:cacheprovider \
-              -k "binance and futures and ${{ matrix.TIMERANGE }}"
+            python -m pytest \
+            tests/backtests \
+            -ra -vv -s \
+            --log-cli-level=info \
+            --artifacts-path=artifacts/ \
+            -p no:cacheprovider \
+            -k "binance and futures and ${{ matrix.TIMERANGE }}"
 
       - name: Show Backtest Output
         run: cat artifacts/backtest-output-binance-futures-${{ matrix.TIMERANGE }}.txt
@@ -236,18 +245,22 @@ jobs:
 
       - name: Run Backtests
         run: |
-          mkdir -p artifacts
-          chmod 777 artifacts
-          docker run --rm \
-            -v "$PWD:/testing" \
+          mkdir -p artifacts && chmod 777 artifacts
+          export COLUMNS=240
+          docker run -v "$PWD:/testing" \
             -v "$PWD/user_data/data:/testing/user_data/data" \
+            --rm \
             -w /testing \
+            --entrypoint "" \
+            --env-file .github/workflows/scripts/ci-proxy.env \
             ci-strategy-backtesting \
-            python -m pytest tests/backtests -ra -vv -s \
-              --log-cli-level=info \
-              --artifacts-path=artifacts/ \
-              -p no:cacheprovider \
-              -k "kucoin and spot and ${{ matrix.TIMERANGE }}"
+            python -m pytest \
+            tests/backtests \
+            -ra -vv -s \
+            --log-cli-level=info \
+            --artifacts-path=artifacts/ \
+            -p no:cacheprovider \
+            -k "kucoin and spot and ${{ matrix.TIMERANGE }}"
 
       - name: Show Backtest Output
         run: cat artifacts/backtest-output-kucoin-spot-${{ matrix.TIMERANGE }}.txt
