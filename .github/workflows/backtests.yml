@@ -5,7 +5,39 @@ on:
   workflow_dispatch:
 
 jobs:
+  Download-Data:
+    runs-on: ubintu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        EXCHANGE: [kucoin]
+        TRADING_MODE: [spot]
+        TIMERANGE:
+          - 20240101-20250701
+    outputs:
+      artifact-prefix: data-${{ matrix.EXCHANGE }}-${{ matrix.TRADING_MODE }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      - name: Fetch data for backtests
+        env:
+          EXCHANGE: ${{ matrix.EXCHANGE }}
+          TRADING_MODE: ${{ matrix.TRADING_MODE }}
+          TIMEFRAME: 5m
+          TIMERANGE: ${{ matrix.TIMERANGE }}
+          HELPER_TIME_FRAMES: 5m 15m 1h 4h 8h 1d
+        run: |
+          .github/workflows/scripts/download-necessary-exchange-market-data-for-backtests.sh
+
+      - name: Upload Market Data Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: data-${{ matrix.EXCHANGE }}-${{ matrix.TRADING_MODE }}
+          path: market-data/
+          retention-days: 1
+
   Backtest:
+    needs: Download-Data
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -23,15 +55,19 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Fetch data for backtests
-        env:
-          EXCHANGE: ${{ matrix.EXCHANGE }}
-          TRADING_MODE: ${{ matrix.TRADING_MODE }}
-          TIMEFRAME: 5m
-          TIMERANGE: ${{ matrix.TIMERANGE }}
-          HELPER_TIME_FRAMES: 5m 15m 1h 4h 8h 1d
-        run: |
-          .github/workflows/scripts/download-necessary-exchange-market-data-for-backtests.sh
+      - name: Download Market Data Artifact for Spot
+        if: ${{ matrix.TRADING_MODE == 'spot' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: data-${{ matrix.EXCHANGE }}-${{ matrix.TRADING_MODE }}
+          path: user_data/data/${{ matrix.EXCHANGE }}
+
+      - name: Download Market Data Artifact for Futures
+        if: ${{ matrix.TRADING_MODE == 'futures' }}
+        uses: actions/download-artifact@v4
+        with:
+          name: data-${{ matrix.EXCHANGE }}-${{ matrix.TRADING_MODE }}
+          path: user_data/data/${{ matrix.EXCHANGE }}/${{ matrix.TRADING_MODE }}
 
       - name: Inject proxy config
         if: ${{ matrix.EXCHANGE == 'binance' }}
