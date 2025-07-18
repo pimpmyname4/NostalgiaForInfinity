@@ -58,14 +58,14 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: data-${{ matrix.EXCHANGE }}-${{ matrix.TRADING_MODE }}
-          path: user_data/data/${{ matrix.EXCHANGE }}
+          path: user_data/data
 
       - name: Download Market Data Artifact for Futures
         if: ${{ matrix.TRADING_MODE == 'futures' }}
         uses: actions/download-artifact@v4
         with:
           name: data-${{ matrix.EXCHANGE }}-${{ matrix.TRADING_MODE }}
-          path: user_data/data/${{ matrix.EXCHANGE }}/${{ matrix.TRADING_MODE }}
+          path: user_data/data
 
       - name: Inject proxy config
         if: ${{ matrix.EXCHANGE == 'binance' }}
