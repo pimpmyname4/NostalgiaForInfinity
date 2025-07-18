@@ -99,6 +99,7 @@ jobs:
         run: |
           mkdir -p artifacts
           chmod 777 artifacts
+          tree
           export COLUMNS=240
           docker run -v "$PWD:/testing" \
             -v "$PWD/user_data/data:/testing/user_data/data" \
