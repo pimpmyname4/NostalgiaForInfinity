@@ -6,7 +6,7 @@ on:
 
 jobs:
   Download-Data:
-    runs-on: ubintu-latest
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -14,8 +14,6 @@ jobs:
         TRADING_MODE: [spot]
         TIMERANGE:
           - 20240101-20250701
-    outputs:
-      artifact-prefix: data-${{ matrix.EXCHANGE }}-${{ matrix.TRADING_MODE }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -33,7 +31,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: data-${{ matrix.EXCHANGE }}-${{ matrix.TRADING_MODE }}
-          path: market-data/
+          path: user_data/data
           retention-days: 1
 
   Backtest:
