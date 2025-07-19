@@ -12,7 +12,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -99,6 +98,7 @@ jobs:
           name: data-kucoin-spot
           path: user_data/data
           retention-days: 1
+
   # Backtest Jobs
   Backtest-Binance-Spot:
     needs:
@@ -111,6 +111,22 @@ jobs:
         TIMERANGE:
           - 20250601-20250701
           - 20250501-20250601
+          - 20250401-20250501
+          - 20250301-20250401
+          - 20250201-20250301
+          - 20250101-20250201
+          - 20241201-20250101
+          - 20241101-20241201
+          - 20241001-20241101
+          - 20240901-20241001
+          - 20240801-20240901
+          - 20240701-20240801
+          - 20240601-20240701
+          - 20240501-20240601
+          - 20240401-20240501
+          - 20240301-20240401
+          - 20240201-20240301
+          - 20240101-20240201
     steps:
       - uses: actions/checkout@v4
       - name: Download Market Data Artifact
@@ -145,6 +161,8 @@ jobs:
             --rm \
             -w /testing \
             --entrypoint "" \
+            -e "COLUMNS=240" \
+            -t \
             --env-file .github/workflows/scripts/ci-proxy.env \
             ci-strategy-backtesting \
             python -m pytest \
@@ -174,6 +192,22 @@ jobs:
         TIMERANGE:
           - 20250601-20250701
           - 20250501-20250601
+          - 20250401-20250501
+          - 20250301-20250401
+          - 20250201-20250301
+          - 20250101-20250201
+          - 20241201-20250101
+          - 20241101-20241201
+          - 20241001-20241101
+          - 20240901-20241001
+          - 20240801-20240901
+          - 20240701-20240801
+          - 20240601-20240701
+          - 20240501-20240601
+          - 20240401-20240501
+          - 20240301-20240401
+          - 20240201-20240301
+          - 20240101-20240201
     steps:
       - uses: actions/checkout@v4
       - name: Download Market Data Artifact
@@ -208,6 +242,8 @@ jobs:
             --rm \
             -w /testing \
             --entrypoint "" \
+            -e "COLUMNS=240" \
+            -t \
             --env-file .github/workflows/scripts/ci-proxy.env \
             ci-strategy-backtesting \
             python -m pytest \
@@ -237,6 +273,22 @@ jobs:
         TIMERANGE:
           - 20250601-20250701
           - 20250501-20250601
+          - 20250401-20250501
+          - 20250301-20250401
+          - 20250201-20250301
+          - 20250101-20250201
+          - 20241201-20250101
+          - 20241101-20241201
+          - 20241001-20241101
+          - 20240901-20241001
+          - 20240801-20240901
+          - 20240701-20240801
+          - 20240601-20240701
+          - 20240501-20240601
+          - 20240401-20240501
+          - 20240301-20240401
+          - 20240201-20240301
+          - 20240101-20240201
     steps:
       - uses: actions/checkout@v4
       - name: Download Market Data Artifact
@@ -263,6 +315,8 @@ jobs:
             --rm \
             -w /testing \
             --entrypoint "" \
+            -e "COLUMNS=240" \
+            -t \
             --env-file .github/workflows/scripts/ci-proxy.env \
             ci-strategy-backtesting \
             python -m pytest \
@@ -376,11 +430,28 @@ jobs:
           pattern: kucoin-spot-testrun-artifacts
           path: downloaded-results/current
 
-      - name: Convert Backtest Output to Markdown
+      - name: Flatten downloaded artifacts
         run: |
-          find downloaded-results/ -type f -iname "*.txt" -print0 | while IFS= read -r -d '' file; do
-            python .github/workflows/scripts/format_backtest.py "$file"
-          done
+          find downloaded-results/current -type f -name 'backtest-output-*.txt' -exec mv {} downloaded-results/current/ \;
+
+      - name: Pre Format Backtest Results
+        run: |
+          find downloaded-results/ -type f -iname *.txt -exec sed -i 's/└.*┘//g' {} +
+          find downloaded-results/ -type f -iname *.txt -exec sed -i 's/┏.*┓//g' {} +
+          find downloaded-results/ -type f -iname *.txt -exec sed -i 's/┡/|/g' {} +
+          find downloaded-results/ -type f -iname *.txt -exec sed -i 's/┃/|/g' {} +
+          find downloaded-results/ -type f -iname *.txt -exec sed -i 's/╇/:|/g' {} +
+          find downloaded-results/ -type f -iname *.txt -exec sed -i 's/━/-/g' {} +
+          find downloaded-results/ -type f -iname *.txt -exec sed -i 's/│/|/g' {} +
+          find downloaded-results/ -type f -iname *.txt -exec sed -i 's/┩/:|/g' {} +
+          find downloaded-results/ -type f -iname *.txt -exec sed -i 's/BACKTESTING REPORT/\n## BACKTESTING REPORT\n/g' {} +
+          find downloaded-results/ -type f -iname *.txt -exec sed -i 's/LEFT OPEN TRADES REPORT/\n## LEFT OPEN TRADES REPORT\n/g' {} +
+          find downloaded-results/ -type f -iname *.txt -exec sed -i 's/ENTER TAG STATS/\n## ENTER TAG STATS\n/g' {} +
+          find downloaded-results/ -type f -iname *.txt -exec sed -i 's/EXIT REASON STATS/\n## EXIT REASON STATS\n/g' {} +
+          find downloaded-results/ -type f -iname *.txt -exec sed -i 's/MIXED TAG STATS/\n## MIXED TAG STATS\n/g' {} +
+          find downloaded-results/ -type f -iname *.txt -exec sed -i 's/DAY BREAKDOWN/\n## DAY BREAKDOWN\n/g' {} +
+          find downloaded-results/ -type f -iname *.txt -exec sed -i 's/SUMMARY METRICS/\n## SUMMARY METRICS\n/g' {} +
+          find downloaded-results/ -type f -iname *.txt -exec sed -i 's/STRATEGY SUMMARY/\n## STRATEGY SUMMARY\n/g' {} +
 
       - name: Comment CI Results
         env:
